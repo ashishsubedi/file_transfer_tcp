@@ -3,7 +3,7 @@ from threading import Thread
 from socketserver import ThreadingMixIn
 
 TCP_IP = '0.0.0.0'
-TCP_PORT = 6000
+TCP_PORT = 80
 BUFFER_SIZE = 1024
 
 class ClientThread(Thread):
