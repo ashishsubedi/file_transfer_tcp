@@ -1,8 +1,8 @@
 import socket
 from time import time
 
-TCP_IP = 'localhost'
-TCP_PORT = 6000
+TCP_IP = 'iamprogrammar10.pythonanywhere.com'
+TCP_PORT = 80
 BUFFER_SIZE = 1024
 
 s = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
@@ -14,6 +14,7 @@ with open('received_file','wb') as f:
     print("Downloading file")
     while True:
         data = s.recv(BUFFER_SIZE)
+        print(data)
         if not data:
             break
         f.write(data)
