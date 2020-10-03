@@ -27,21 +27,25 @@ class ClientThread(Thread):
                     self.sock.close()
                     break
 
-tcpsock = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-tcpsock.setsockopt(socket.SOL_SOCKET,socket.SO_REUSEADDR,1)
-tcpsock.bind((TCP_IP,TCP_PORT))
+def startServer():
+    tcpsock = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+    tcpsock.setsockopt(socket.SOL_SOCKET,socket.SO_REUSEADDR,1)
+    tcpsock.bind((TCP_IP,TCP_PORT))
 
-threads = []
+    threads = []
 
-while True:
-    tcpsock.listen(5)
-    print("Waiting for incoming connections")
-    (conn,(ip,port)) = tcpsock.accept()
-    print(f"[CONNECTED] Welcome, {ip}:{port} !")
-    newThread = ClientThread(ip,port,conn)
-    newThread.start()
-    threads.append(newThread)
+    while True:
+        tcpsock.listen(5)
+        print("Waiting for incoming connections")
+        (conn,(ip,port)) = tcpsock.accept()
+        print(f"[CONNECTED] Welcome, {ip}:{port} !")
+        newThread = ClientThread(ip,port,conn)
+        newThread.start()
+        threads.append(newThread)
 
-for t in threads:
-    t.join()
-tcpsock.close()
+    for t in threads:
+        t.join()
+    tcpsock.close()
+
+if __name__ == "__main__":
+    startServer()
