@@ -1,7 +1,7 @@
 import socket
 from time import time
 
-TCP_IP = 'iamprogrammar10.pythonanywhere.com'
+TCP_IP = 'https://ftserverhost.herokuapp.com/'
 TCP_PORT = 80
 BUFFER_SIZE = 1024
 
