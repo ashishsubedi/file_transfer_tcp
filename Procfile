@@ -1,2 +1,2 @@
-web: python flask_server.py
+worker: python server.py
 
