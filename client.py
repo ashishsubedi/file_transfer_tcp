@@ -1,9 +1,13 @@
 import socket
 from time import time
 import sys
+import os
 
 FLAG_SEND = 1
 FLAG_RECV = 0
+
+END_PATTERN = bytes('ENDCOMM','utf-8')
+HEADER_SIZE = 10
 
 flag = -1
 recvFlag = -1
@@ -13,8 +17,8 @@ TCP_IP = '0.0.0.0'
 TCP_PORT = 7200
 BUFFER_SIZE = 4096
 
-TCP_IP = input("Enter SERVER address: ")
-TCP_PORT = int(input("Enter server port: "))
+# TCP_IP = input("Enter SERVER address: ")
+# TCP_PORT = int(input("Enter server port: "))
 
 s = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
 s.connect((TCP_IP,TCP_PORT))
@@ -42,6 +46,7 @@ def establishSendRecvConn():
 if __name__ == "__main__":
     try: 
         retry = 1
+
         while (retry == 1 or retry == '1'):
             if not establishSendRecvConn(): sys.exit(1)
 
@@ -52,35 +57,48 @@ if __name__ == "__main__":
             else:
                 print("Exiting program")
                 sys.exit(1)
-
+            totalBytes = 0
             if flag == FLAG_RECV:
                 try:
-                    with open(filename,'wb') as f:
-                        print("Downloading file")
-                        while True:
-                            data = s.recv(BUFFER_SIZE)
-                            print(data)
-                            if not data:
-                                break
+                     with open(filename,'wb') as f:
+                        print("Waiting for sender")
+                        msgLen = int(s.recv(HEADER_SIZE).decode('utf-8'))
+                        print(f"Total Download Size: {msgLen} bytes")
+
+                        while msgLen>0:
+                            if(msgLen>BUFFER_SIZE):
+                                size = BUFFER_SIZE
+                            else:
+                                size = msgLen
+                            msgLen-=BUFFER_SIZE
+                            
+                            data = s.recv(size)
+
+                            totalBytes += len(data)
+                            print(f'Downloading... {str(totalBytes):>{HEADER_SIZE}} bytes ',end='\r',flush=True)
                             f.write(data)
-                except:
-                    print("Some error occured")
+                except Exception as e:
+                    print("Some error occured",e)
                     retry = input("Press 1 to send file again, press any other key to exit")
             
             elif flag == FLAG_SEND:
                 try:
                     with open(filename,'rb') as f:
                         print("Uploading file")
+                        msgLen = os.path.getsize(filename)
+                        s.send(bytes(f'{msgLen:<{HEADER_SIZE}}','utf-8'))
                         while True:
+                            #Send header
                             l = f.read(BUFFER_SIZE)
                             # while the file contains data after read
                             while(l):
-                                s.send(l)
+                                s.sendall(l)
                                 l=f.read(BUFFER_SIZE)
                             if not l:
+                                print("Upload Complete")
                                 break
-                except:
-                    print("Some error occured")
+                except Exception as e:
+                    print("Some error occured",e)
                     retry = input("Press 1 to send file again, press any other key to exit")
             
             

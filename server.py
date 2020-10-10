@@ -1,6 +1,7 @@
 import socket
 from threading import Thread
 from socketserver import ThreadingMixIn
+import sys,os
 
 TCP_IP = '0.0.0.0'
 TCP_PORT = 7200
@@ -9,6 +10,10 @@ BUFFER_SIZE = 4096
 
 FLAG_SEND = 1
 FLAG_RECV = 0
+
+END_PATTERN = bytes('ENDCOMM','utf-8')
+HEADER_SIZE = 10
+
 
 flag = -1
 recvFlag = -1
@@ -57,18 +62,29 @@ def startServer():
                 print("Exiting program")
                 return False
 
+            totalBytes = 0
             if flag == FLAG_RECV:
                 try:
                     with open(filename,'wb') as f:
-                        print("Downloading file")
-                        while True:
-                            data = sock.recv(BUFFER_SIZE)
-                            print(data)
-                            if not data:
-                                break
+                        print("Waiting for sender")
+                        msgLen = int(sock.recv(HEADER_SIZE).decode('utf-8'))
+                        print(f"Total Download Size: {msgLen} bytes")
+                        while msgLen>0:
+                            if(msgLen>BUFFER_SIZE):
+                                size = BUFFER_SIZE
+                            else:
+                                size = msgLen
+                            msgLen-=BUFFER_SIZE
+                            
+                            data = sock.recv(size)
+
+                            totalBytes += len(data)
+                            print(f'Downloading... {str(totalBytes):>{HEADER_SIZE}} bytes ',end='\r',flush=True)
                             f.write(data)
-                except:
-                    print("Some error occured")
+
+                    print(f"Download Complete... {str(totalBytes):>{HEADER_SIZE}} bytes downloaded")
+                except Exception as e:
+                    print("Some error occured",e)
                     retry = input("Press 1 to send file again, press any other key to exit")
             
 
@@ -76,16 +92,20 @@ def startServer():
                 try:
                     with open(filename,'rb') as f:
                         print("Uploading file")
+                        msgLen = os.path.getsize(filename)
+                        sock.send(bytes(f'{msgLen:<{HEADER_SIZE}}','utf-8'))
                         while True:
+                            #Send header
                             l = f.read(BUFFER_SIZE)
                             # while the file contains data after read
                             while(l):
-                                sock.send(l)
+                                sock.sendall(l)
                                 l=f.read(BUFFER_SIZE)
                             if not l:
+                                print("Upload Complete")
                                 break
-                except:
-                    print("Some error occured")
+                except Exception as e:
+                    print("Some error occured",e)
                     retry = input("Press 1 to send file again, press any other key to exit")
     except:
         pass
