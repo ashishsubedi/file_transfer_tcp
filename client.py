@@ -13,9 +13,11 @@ flag = -1
 recvFlag = -1
 filename = ''
 
-TCP_IP = '0.0.0.0'
+TCP_IP = 'localhost'
 TCP_PORT = 7200
-BUFFER_SIZE = 4096
+# TCP_IP = '0.tcp.ngrok.io'
+# TCP_PORT = 17314
+BUFFER_SIZE = 8192
 
 # TCP_IP = input("Enter SERVER address: ")
 # TCP_PORT = int(input("Enter server port: "))
@@ -51,20 +53,20 @@ if __name__ == "__main__":
             if not establishSendRecvConn(): sys.exit(1)
 
             if(flag == FLAG_RECV):
-                filename = input("Enter full path of file to receive")
+                filename = input("Enter full path of file to receive\n")
             elif flag == FLAG_SEND:
-                filename = input("Enter full path of file to send")
+                filename = input("Enter full path of file to send\n")
             else:
                 print("Exiting program")
                 sys.exit(1)
             totalBytes = 0
             if flag == FLAG_RECV:
                 try:
-                     with open(filename,'wb') as f:
+                    with open(filename,'wb') as f:
                         print("Waiting for sender")
                         msgLen = int(s.recv(HEADER_SIZE).decode('utf-8'))
                         print(f"Total Download Size: {msgLen} bytes")
-
+                        actSize = msgLen
                         while msgLen>0:
                             if(msgLen>BUFFER_SIZE):
                                 size = BUFFER_SIZE
@@ -75,8 +77,10 @@ if __name__ == "__main__":
                             data = s.recv(size)
 
                             totalBytes += len(data)
-                            print(f'Downloading... {str(totalBytes):>{HEADER_SIZE}} bytes ',end='\r',flush=True)
+                            print(f'Downloading... {str(totalBytes):>{HEADER_SIZE}} bytes {str(totalBytes/actSize*100)}%\n',end='\r',flush=True)
                             f.write(data)
+                    print(f"\nDownload Complete... {str(totalBytes):>{HEADER_SIZE}} bytes downloaded\t\t")
+
                 except Exception as e:
                     print("Some error occured",e)
                     retry = input("Press 1 to send file again, press any other key to exit")
@@ -84,14 +88,20 @@ if __name__ == "__main__":
             elif flag == FLAG_SEND:
                 try:
                     with open(filename,'rb') as f:
-                        print("Uploading file")
+                        print("Waiting for reveiver")
                         msgLen = os.path.getsize(filename)
                         s.send(bytes(f'{msgLen:<{HEADER_SIZE}}','utf-8'))
+                        print(f"Total Upload Size: {msgLen} bytes")
+                        actSize = msgLen
+
                         while True:
                             #Send header
                             l = f.read(BUFFER_SIZE)
                             # while the file contains data after read
                             while(l):
+                                totalBytes += len(l)
+                                print(f'Uploading... {str(totalBytes):>{HEADER_SIZE}} bytes {str(totalBytes/actSize*100)}% uploaded',end='\r',flush=True)
+
                                 s.sendall(l)
                                 l=f.read(BUFFER_SIZE)
                             if not l:
