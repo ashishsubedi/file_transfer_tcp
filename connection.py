@@ -5,18 +5,13 @@ import sys
 import os
 
 
-FLAG_SEND = 1
-FLAG_RECV = 0
 
 END_PATTERN = bytes('ENDCOMM','utf-8')
-HEADER_SIZE = 10
+FILE_SIZE_HEADER = 10
+FILENAME_SIZE_HEADER = 30
+HEADER_SIZE = FILE_SIZE_HEADER + FILENAME_SIZE_HEADER
 
-
-
-TCP_IP = 'localhost'
-TCP_PORT = 7200
-
-BUFFER_SIZE = 8192
+BUFFER_SIZE = 2048
 
 
 def establishSendRecvConn_server(sock,flag=-1,recvFlag=-1):
@@ -63,7 +58,9 @@ def send_data(s,filename):
         print("Sending to receiver")
         with open(filename,'rb') as f:
             msgLen = os.path.getsize(filename)
-            s.send(bytes(f'{msgLen:<{HEADER_SIZE}}','utf-8'))
+            basename = os.path.basename(filename)
+            s.send(bytes(f'{msgLen:<{FILE_SIZE_HEADER}}','utf-8'))
+            s.send(bytes(f'{filename:<{FILENAME_SIZE_HEADER}}','utf-8'))
             print(f"Total Upload Size: {msgLen} bytes")
             actSize = msgLen
             totalBytes = 0
@@ -90,11 +87,16 @@ def send_data(s,filename):
         print("Some error occured",e)
     
 
-def read_data(s,filename):
+def read_data(s,filePath):
     try:
+        print("Waiting for sender")
+        msgLen = int(s.recv(FILE_SIZE_HEADER).decode('utf-8'))
+        basename = s.recv(FILENAME_SIZE_HEADER).decode('utf-8')
+        filename = os.path.join(filePath,basename)
+        
         with open(filename,'wb') as f:
-            print("Waiting for sender")
-            msgLen = int(s.recv(HEADER_SIZE).decode('utf-8'))
+            
+
             print(f"Total Download Size: {msgLen} bytes")
             actSize = msgLen
             totalBytes = 0

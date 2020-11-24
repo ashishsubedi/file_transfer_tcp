@@ -1,20 +1,21 @@
 import socket
-from threading import Thread
-from socketserver import ThreadingMixIn
 import sys,os
 from connection import send_data,read_data,establishSendRecvConn_server
 
 
-TCP_IP = 'localhost'
+TCP_IP = '0.0.0.0'
 TCP_PORT = 7200
-BUFFER_SIZE = 16384
+BUFFER_SIZE = 2048
 
 
 FLAG_SEND = 1
 FLAG_RECV = 0
 
 END_PATTERN = bytes('ENDCOMM','utf-8')
-HEADER_SIZE = 10
+
+FILE_SIZE_HEADER = 10
+FILENAME_SIZE_HEADER = 30
+HEADER_SIZE = FILE_SIZE_HEADER + FILENAME_SIZE_HEADER
 
 
 filename = ''
@@ -23,9 +24,7 @@ filename = ''
 def startServer(ip=TCP_IP,port=TCP_PORT):
     try:
         tcpsock = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-        tcpsock.setsockopt(socket.SOL_SOCKET,socket.SO_REUSEADDR,1)
         tcpsock.bind((ip,port))
-
        
         tcpsock.listen(1)
         print("Waiting for incoming connections")
